@@ -10,6 +10,11 @@ struct node{
       
 };
 
+void waitFor (unsigned int secs) {
+    unsigned int retTime = time(0) + secs;   // Get finishing time.
+    while (time(0) < retTime);               // Loop until it arrives.
+}
+
 void swap(struct node *i, struct node *j)
 {
     struct node temp = *i;
@@ -60,80 +65,83 @@ int * randPermGen(int length, int elemRange){
 }
 
 //partition procedure that will partition array around its first element.
- int partition(struct node a[], int l, int r){
-     int piv=a[l].item,i=l+1,j=r;
+ int partition(struct node a[], int l, int r, int *numComp){
+    int piv = a[l].item;
+
+    int i = l;
+    int j = r+1;
     struct node temp;
 
-    while(i<=j)
+    while(1)
     {
-        while(a[i].item<=piv && i<=j)
-            i++;
-        while(a[j].item>=piv && i<=j)
-            j--;
-        if(i<j)
+        do
         {
-            temp = a[j];
-            a[j] = a[i];
-            a[i] = temp;
+            i = i + 1;
+
+            if(i > r)
+                return i-1;
+
+            // Counting comparisions    
+            (*numComp)++;
+        } while (a[i].item < piv);
+        
+        
+        do
+        {
+            j = j -1;
+
+            if(j < 0)
+                return j+1;
+
+            // Counting comparisions    
+            (*numComp)++;
+        } while (a[j].item > piv);
+        
+        // This comparison do not counts
+        // In analysis we consider comparison between two elemtnts
+        // This is index comparions
+        if(i>=j)
+        {
+            return j;
         }
-    }
-    //swapping the 'pivot element node' with the element at its final position.
-    temp = a[j];
-    a[j] = a[l];
-    a[l] = temp;
     
-    return j;
+        temp = a[j];
+        a[j] = a[i];
+        a[i] = temp;
+
+        if(i+1 == j)
+        {
+            return i;
+        }
+
+        //i++;
+        //j--;        
+    }
+
+    return i-1;
 }
 
 
 //Quick sort procedure
-void quick_sort(struct node a[], int l, int r)
+void quick_sort(struct node a[], int l, int r, int *numComp)
 {
-    if(l>r)
-    return;
-    int k=partition(a,l,r);
-    quick_sort(a,l,k-1);
-    quick_sort(a,k+1,r);
-}
+    struct node temp;
+    if(l<r)
+    {   int pivot = rand()%(r-l+1);
+        temp = a[pivot];
+        a[pivot] = a[0];
+        a[0] = temp;
 
-// Partition the array around the first element
-int mPartition(struct node arr[], int len, int *numComp)
-{
-    // Picking pivot element
-    int pivot = arr[0].item;
+        int k=partition(a,l,r, numComp);
 
-    // Partition indicator
-    int i = 1;
-    int j = len - 1;
+        //swapping the 'pivot element node' with the element at its final position.
+        temp = a[k];
+        a[k] = a[l];
+        a[l] = temp;
 
-    while(1){
-        
-        // Bypass the elements which are already less than pivot
-        while(arr[i].item <= pivot){
-            i = i + 1;
-            (*numComp)++;
-        }
-        (*numComp)++;
-
-        // Bypass the elements which are already greater than pivot
-        while(arr[j].item > pivot){
-            j = j - 1;
-            (*numComp)++;
-        }
-        (*numComp)++;
-
-        (*numComp)++;
-        if(i < j)
-        {
-            // Fix inversions
-            swap(&arr[i], &arr[j]);
-            i++;
-            j--;
-        }
-        else
-            break;
+        quick_sort(a,l,k, numComp);
+        quick_sort(a,k+1,r, numComp);
     }
-    return i-1;
 }
 
 // Function that partition the array around two elements u and v
@@ -146,7 +154,8 @@ void multiPartition(struct node arr[], int len, int *u, int *v, int *numComp)
     swap(&arr[1], &arr[*u]);
     
     // Partition the array excluding the first element which has v
-    int indexU = mPartition(&arr[1],len-1, numComp) + 1;
+    //int indexU = mPartition(&arr[1],len-1, numComp) + 1;
+    int indexU = partition(arr, 1, len-1, numComp);
 
     // Take v to the second half of the partition
     swap(&arr[0], &arr[indexU]);
@@ -155,7 +164,8 @@ void multiPartition(struct node arr[], int len, int *u, int *v, int *numComp)
     swap(&arr[1], &arr[indexU-1]);
 
     // Partition the remaining array
-    int indexV = mPartition(&arr[indexU], len-indexU, numComp) + indexU;
+    //int indexV = mPartition(&arr[indexU], len-indexU, numComp) + indexU;
+    int indexV = partition(arr, indexU, len-1, numComp);
 
     // Take v to its position
     swap(&arr[indexU], &arr[indexV]);
@@ -171,70 +181,77 @@ void multiPartition(struct node arr[], int len, int *u, int *v, int *numComp)
 // in 1.5n+o(n) comparision on expectation
 int exactMedian(int *inArray, int len, int *numComp)
 {
-    // Create a array of structure to work on. This is for the sake of reusability
-    struct node *arr = (struct node *)malloc(len*sizeof(struct node));
-    
-    for(int  i = 0; i < len; i++)
-    {
-        arr[i].item = inArray[i];
-        arr[i].index = i;
-    }
-    
-    // Random Sample S
-        int sampleSize = floor(pow((double)len, 3.0/4.0));
 
-        // Generate random permutation of indice
-        int *randSampleIndex = randPermGen(sampleSize, len);
+    int indexU = len-1;
+    int indexV = 0;
+    int middleIndex = len/2;
+    int sampleSize = 0;
 
-        // Random sample, with its index in original array
-        struct node *randomSampleArray = (struct node *)malloc(sampleSize*sizeof(struct node));
+    int *randSampleIndex;
+    struct node *arr;
+    struct node *randomSampleArray;
 
-        for(int i=0; i<sampleSize; i++)
+    //do
+    //{
+        // Create a array of structure to work on. This is for the sake of reusability of code
+        arr = (struct node *)malloc(len*sizeof(struct node));
+        
+        for(int  i = 0; i < len; i++)
         {
-            randomSampleArray[i].item = arr[randSampleIndex[i]].item;
-            randomSampleArray[i].index = randSampleIndex[i];
+            arr[i].item = inArray[i];
+            arr[i].index = i;
         }
+        
+        // Random Sample S
+            sampleSize = floor(pow((double)len, 3.0/4.0));
 
-    // Sort random sample
-        quick_sort(randomSampleArray, 0, sampleSize-1);
+            // Generate random permutation of indice
+            randSampleIndex = randPermGen(sampleSize, len);
 
-    // Pick two elements u and v from random sample
-        int rank = floor(sampleSize/2);
-        int smallOrder = floor(pow(len,1/2));
+            // Random sample, with its index in original array
+            randomSampleArray = (struct node *)malloc(sampleSize*sizeof(struct node));
 
-        int rankU = rank - smallOrder;
-        int rankV = rank + smallOrder;
+            for(int i=0; i<sampleSize; i++)
+            {
+                randomSampleArray[i].item = arr[randSampleIndex[i]].item;
+                randomSampleArray[i].index = randSampleIndex[i];
+            }
 
-        int indexU;
-        int indexV;
+        // Sort random sample
+            quick_sort(randomSampleArray, 0, sampleSize-1, numComp);
 
-        if(rankU >= 0 )
-            indexU = randomSampleArray[rankU].index;
-        else
-            indexU = 0;
+        // Pick two elements u and v from random sample
+            int rank = (sampleSize/2);
+            int smallOrder = (pow(len,1.0/4.0));
 
-        if(rankV < sampleSize)
-            indexV = randomSampleArray[rankU].index;
-        else
-            indexV = 0;
+            int rankU = rank - smallOrder;
+            int rankV = rank + smallOrder;
 
-    // Multipartition across u and v
-        multiPartition(arr, len, &indexU, &indexV, numComp);
+
+            // Insure indices don't cross their line
+            if(rankU >= 0 )
+                indexU = randomSampleArray[rankU].index;
+            else
+                indexU = 0;
+
+            if(rankV < sampleSize)
+                indexV = randomSampleArray[rankV].index;
+            else
+                indexV = 0;
+
+
+        // Multipartition across u and v
+            multiPartition(arr, len, &indexU, &indexV, numComp);
+            
+    //}while(indexU >= middleIndex || indexV <= middleIndex);
 
     // Sort Elements between u and v
-        quick_sort(arr, indexU, indexV);
+        quick_sort(arr, indexU+1, indexV-1, numComp);
 
-    printf("%d %d\n", indexU, indexV);
-
-    
-    /* for(int i = 0; i < len; i++)
-    {
-        printf("%d  ", arr[i].item);
-    }
-    printf("\n"); */
+    printf("IndexU: %d IndexV: %d\n", indexU, indexV);
     
     // Median is at index n/2
-    int medianIndex = (int)floor(len/2);
+    int medianIndex = len/2;
     int median = arr[medianIndex].item;
 
     // Free Memory
@@ -263,6 +280,7 @@ int compare_ints(const void *p, const void *q) {
 void sort_ints(int *a, int n) {
     qsort(a, n, sizeof *a, &compare_ints);
 }
+
 //int argc, char const *argv[]
 int main()
 {
@@ -280,40 +298,50 @@ int main()
         arr[i-1] = atoi(argv[i]);
     } 
     */
-    int len = 10000;
-    printf("Here");
-    int *arr1 = randPermGen(len, 100000);
-    printf("Here");
 
-    
-    struct node *arr2 = (struct node *)malloc(len*sizeof(struct node));
-    int *arr3 = (int *)malloc(len*sizeof(int));
-    
-    for(int i=0; i<len; i++)
+    int per = 0;
+
+    for(size_t i=1; i<100; i++)
     {
-        arr2[i].item = arr1[i];
-        arr2[i].index = i;
+        int len = 101;
 
-        arr3[i] = arr1[i];
-    }
-    
-    quick_sort(arr2, 0, len-1);
-    sort_ints(arr3, len);
-
-    for(int i=0; i<len; i++)
-    {
-        if(arr2[i].item != arr3[i])
+        // Keep the range of element sufficiently large from len
+        // Code breaks for weird reason when it is less
+        int *arr1 = randPermGen(len, 10000);
+        //int arr1[] = {10,9,8,7,6,5,4,3,2,1,0};
+        
+        int numComp = 0;
+        
+        int *arr2 = (int *)malloc(len*sizeof(int));
+        int *arr3 = (int *)malloc(len*sizeof(int));
+        
+        for(int i=0; i<len; i++)
         {
-            printf("Fail");
-            exit(1);
+            arr2[i] = arr1[i];
+
+            arr3[i] = arr1[i];
         }
+        
+        int median = exactMedian(arr2, len, &numComp);
+
+        sort_ints(arr3, len);    
+
+        int medianIndex = len/2;
+        printf("%d is supposed to be %d    Comparision: %d\n", median, arr3[medianIndex], numComp);
+
+        if(median == arr3[medianIndex])
+        {
+            per++;
+        }
+        
+        //free(arr1);
+        free(arr2);
+        free(arr3);
+
+        waitFor(1);
     }
 
-    printf("Success");
-    
-
-
-    //free(arr);
+    printf("%d\n", per);
 
     return 0;
 }
