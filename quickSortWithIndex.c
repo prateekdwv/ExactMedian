@@ -104,8 +104,8 @@ int main()
     for(int j = 1; j <= 100; j++)
     {
             
-        int n = 1000000;
-        int *p = randPermGen(n);
+        int n = 11;
+        int p[] = {5,4,2,5,8,3,1,9,0,6,5};
         struct node *arr = (struct node *)malloc(n*sizeof(struct node));
         int *a = (int *)malloc(n*sizeof(int));
 
@@ -117,13 +117,15 @@ int main()
             a[i] = p[i];
 
         }
-        quick_sort(arr,0,n-1);
-        /* printf("Sorted list is as: ");
-        printf("\n");
-        for(i=0;i<n;i++){
+        //quick_sort(arr,0,n-1);
+        long long int index= partition(arr,0, 7);
+
+        printf("Index: %lld \n Partitioned list is as: ", index);
+        for(int i=0;i<n;i++){
             printf("%lld ",arr[i].item);
         }
         printf("\n");
+        /*
         for(i=0;i<n;i++){
             printf("%lld ",arr[i].index);
         }

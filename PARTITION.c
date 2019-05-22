@@ -141,9 +141,9 @@ int main(int argc, char const *argv[])
         int u = rand()%10000;
         int v = rand()%10000;
 
-        int *arr = randPermGen(10000);
+        int *arr = randPermGen(100);
 
-        multiPartition(arr, 10000, &u, &v, &numComp);
+        multiPartition(arr, 100, &u, &v, &numComp);
 
         per += testPartition(arr, 10000, u, v);
     }
