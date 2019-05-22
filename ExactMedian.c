@@ -13,11 +13,11 @@
     // Array Element Range
     // CATUION Keep this range more than or equal to ARRSIZE. 
     // Because random generation is without repetition
-    #define ELERANGE 100000
+    #define ELERANGE 10000000
     // Size of Sample
-    #define SAMPLESIZE floor(pow((double)len, 2.0/3.0))
+    #define SAMPLESIZE(length) floor(pow((double)(length), 2.0/3.0))
     // Gap
-    #define GAP floor(pow((double)len, 4.0/10.0))
+    #define GAP(length) floor(pow((double)(length), 4.0/10.0))
 
 // Structure having two fields item and its index in the given array.
 struct node{
@@ -419,7 +419,7 @@ ll exactMedian(ll *inArray, ll len, ll *numComp, ll *maxComp, ll *minComp){
     }
     
     // Random Sample S
-        sampleSize = SAMPLESIZE;
+        sampleSize = SAMPLESIZE(len);
         //sampleSize = floor(10*log2f(len));
         
         // Generate random permutation of indice
@@ -435,7 +435,7 @@ ll exactMedian(ll *inArray, ll len, ll *numComp, ll *maxComp, ll *minComp){
         }
 
         sampleMiddleIndex = sampleSize / 2;
-        ll smallOrder = GAP;
+        ll smallOrder = GAP(len);
 
         ll rankU = sampleMiddleIndex - smallOrder;
         ll rankV = sampleMiddleIndex + smallOrder;
@@ -557,7 +557,7 @@ int main(){
 
     }
 
-    printf("%d, %f %f %f\n", accuracy, ((float)expComp/trail)/len, ((float)minComp)/len, ((float)maxComp)/len);
+    printf("Accuracy: %d    Avg: %f    Min: %f    Max: %f\n", accuracy, ((float)expComp/trail)/len, ((float)minComp)/len, ((float)maxComp)/len);
 
     return 0;
 }
