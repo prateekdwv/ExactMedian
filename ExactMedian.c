@@ -8,12 +8,12 @@
 // Constants. Change it on your own risk :)
     // Number of trails of experiment
     #define TRAILS 100
-    // Size of array
-    #define ARRSIZE 10000
-    // Array Element Range
-    // CATUION Keep this range more than or equal to ARRSIZE. 
-    // Because random generation is without repetition
-    #define ELERANGE 10000000
+    // Size of Array - Low
+    #define LOW 100
+    // Size of Array - High
+    #define HIGH 1000
+    // Jump of array size
+    #define JUMP 100
     // Size of Sample
     #define SAMPLESIZE(length) floor(pow((double)(length), 2.0/3.0))
     // Gap
@@ -257,62 +257,6 @@ void quick_select(struct node a[], int k, ll l, ll r, ll *numComp){
 }
 
 
-//Quick sort procedure
-void quick_sort(struct node a[], ll l, ll r, ll *numComp){
-    struct node temp;
-    if(l<r)
-    {   
-        /*
-        // Randomized QuickSort
-        int pivot = rand()%(r-l);
-        temp = a[l + pivot];
-        a[l + pivot] = a[l];
-        a[l] = temp;
-        */
-        
-        /* if ((l-r+1) < 10) {
-            return;
-        } */
-
-        // Use insertion sort if the size of array goes below threshold        
-        if((r-l+1) < 10)
-        {
-            insertionSort(a,l,r, numComp);
-
-            return;
-        }
-
-        // Pivot is median of (first, middle, last) element
-        int mid = (l + r)/ 2;
-        
-        if (a[mid].item < a[l].item) {
-            swap(&a[mid], &a[l]);
-        }
-
-        if(a[r].item < a[l].item) {
-            swap(&a[r], &a[l]);
-        }
-
-        if(a[mid].item < a[r].item) {
-            swap(&a[mid], &a[r]);
-        }
-        
-        swap(&a[r], &a[l]);
-
-        ll k = partition(a,l,r, numComp);
-        
-        // Removing two extra comparisons
-        *numComp -= 2;
-
-        // Swapping the 'pivot element node' with the element at its final position.
-        swap(&a[k], &a[l]);
-
-        // Recursive calls
-        quick_sort(a,l,k-1, numComp);
-        quick_sort(a,k+1,r, numComp);
-    }
-}
-
 // Function that partition the array around two elements u and v
 void multiPartition(struct node arr[], ll len, ll *e, ll *u, ll *v, ll *numComp){
     ll middleIndex = len/2;
@@ -445,7 +389,6 @@ ll exactMedian(ll *inArray, ll len, ll *numComp, ll *maxComp, ll *minComp){
         quick_select(randomSampleArray, sampleMiddleIndex,0,sampleSize-1,numComp);
         quick_select(randomSampleArray, rankU,0,sampleMiddleIndex-1,numComp);
         quick_select(randomSampleArray, rankV,sampleMiddleIndex+1,sampleSize-1,numComp);
-            //insertionSort(randomSampleArray, 0, sampleSize-1, numComp);
 
     // Pick two elements u and v from random sample and middle element e
 
@@ -500,64 +443,78 @@ ll exactMedian(ll *inArray, ll len, ll *numComp, ll *maxComp, ll *minComp){
 }
 
 //int argc, char const *argv[]
-int main(){   
-    int accuracy = 0;
-    ll expComp = 0;
-    ll maxComp = 0;
-    ll minComp = 5*ARRSIZE;
-    ll len;
-    int trail = TRAILS;
+int main(){
+    FILE *outputFilePtr = fopen("output.csv", "a");
 
-    for(size_t i=1; i<=trail; i++)
+    if (outputFilePtr  == NULL)
     {
-        //printf("%lud", i);
-        len = ARRSIZE;
-
-        // Keep the range of element sufficiently large from len
-        // Code breaks for weird reason when it is less
-        ll *arr1 = randPermGenRep(len, ELERANGE);
-        //int arr1[] = {10,9,8,7,6,5,4,3,2,1,0};
-
-        
-        ll numComp = 0;
-        
-        ll *arr2 = (ll *)malloc(len*sizeof(ll));
-        ll *arr3 = (ll *)malloc(len*sizeof(ll));
-        
-        for(ll i=0; i<len; i++)
-        {
-            arr2[i] = arr1[i];
-
-            arr3[i] = arr1[i];
-        }
-        
-        ll median = exactMedian(arr2, len, &numComp, &maxComp, &minComp);
-
-        sort_ints(arr3, len);    
-
-        ll middleIndex = len/2;
-
-        //printf("%lld is supposed to be %lld    Comparision: %lld\n", median, arr3[middleIndex], numComp);
-
-        if(median == arr3[middleIndex])
-        {
-            accuracy++;   
-        }
-
-        expComp += numComp;
-        
-        //free(arr1);
-        free(arr2);
-        free(arr3);
-       
-        //waitFor(1.5);
-        
-        for(size_t i = 0; i < 10000000; i++);
-        
-
+        printf("Failed to open output file");
+        exit(1);
     }
+    
+    for (size_t j = LOW; j <= HIGH; j += JUMP)
+    {
+        int arrsize = j;
+        int elerange = j*100;
 
-    printf("Accuracy: %d    Avg: %f    Min: %f    Max: %f\n", accuracy, ((float)expComp/trail)/len, ((float)minComp)/len, ((float)maxComp)/len);
+        int accuracy = 0;
+        ll expComp = 0;
+        ll maxComp = 0;
+        //ll minComp = 5*ARRSIZE;
+        ll minComp = 0;
+        ll len;
+        int trail = TRAILS;
+        for(size_t i=1; i<=trail; i++)
+        {
+            //printf("%lud", i);
+            len = arrsize;
+
+            // Keep the range of element sufficiently large from len
+            // Code breaks for weird reason when it is less
+            ll *arr1 = randPermGenRep(len, elerange);
+            //int arr1[] = {10,9,8,7,6,5,4,3,2,1,0};
+
+            
+            ll numComp = 0;
+            
+            ll *arr2 = (ll *)malloc(len*sizeof(ll));
+            ll *arr3 = (ll *)malloc(len*sizeof(ll));
+            
+            for(ll i=0; i<len; i++)
+            {
+                arr2[i] = arr1[i];
+
+                arr3[i] = arr1[i];
+            }
+            
+            ll median = exactMedian(arr2, len, &numComp, &maxComp, &minComp);
+
+            sort_ints(arr3, len);    
+
+            ll middleIndex = len/2;
+
+            //printf("%lld is supposed to be %lld    Comparision: %lld\n", median, arr3[middleIndex], numComp);
+
+            if(median == arr3[middleIndex])
+            {
+                accuracy++;   
+            }
+
+            expComp += numComp;
+            
+            //free(arr1);
+            free(arr2);
+            free(arr3);
+        
+            //waitFor(1.5);
+            
+            for(size_t i = 0; i < 10000000; i++);
+            
+
+        }
+
+        fprintf(outputFilePtr, "%lu,%f,%f,%f,%d\n", j, ((float)expComp/trail)/len, ((float)minComp)/len, ((float)maxComp)/len, accuracy);
+    }
 
     return 0;
 }
