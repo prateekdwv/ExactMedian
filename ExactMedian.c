@@ -9,11 +9,11 @@
     // Number of trails of experiment
     #define TRAILS 100
     // Size of Array - Low
-    #define LOW 100
+    #define LOW 1000000
     // Size of Array - High
-    #define HIGH 1000
+    #define HIGH 500000
     // Jump of array size
-    #define JUMP 100
+    #define JUMP 50000
     // Size of Sample
     #define SAMPLESIZE(length) floor(pow((double)(length), 2.0/3.0))
     // Gap
@@ -339,6 +339,43 @@ void multiPartition(struct node arr[], ll len, ll *e, ll *u, ll *v, ll *numComp)
         *v = indexV;
 }
 
+ll quickSelect(ll *inArray, ll len, ll *numComp, ll *maxComp, ll *minComp){
+    ll middleIndex = len/2;
+    struct node *arr;
+
+    // Create a array of structure to work on. This is for the sake of reusability of code
+    arr = (struct node *)malloc(len*sizeof(struct node));
+    
+    for(ll  i = 0; i < len; i++)
+    {
+        arr[i].item = inArray[i];
+        arr[i].index = i;
+    }
+
+    //TODO
+
+    quick_select(arr,len/2,0,len-1,numComp);
+
+    // Found it!!
+    ll median = arr[middleIndex].item;
+
+    // Update Comparison
+    if(*maxComp < *numComp)
+    {
+        *maxComp = *numComp;
+    }
+    if(*minComp > *numComp)
+    {
+        *minComp = *numComp;
+    }
+
+    // Free Memory
+    free(arr);
+
+    return median;
+
+}
+
 // Function that modifies the input array with median at (len/2)th index
 // in 1.5n+o(n) comparision on expectation
 ll exactMedian(ll *inArray, ll len, ll *numComp, ll *maxComp, ll *minComp){
@@ -443,25 +480,40 @@ ll exactMedian(ll *inArray, ll len, ll *numComp, ll *maxComp, ll *minComp){
 }
 
 //int argc, char const *argv[]
-int main(){
-    FILE *outputFilePtr = fopen("output.csv", "a");
+int main(int argc, char *argv[]){
+    if (argc <= 1)
+    {
+        printf("Invalid Execution");
+        exit(0);
+    }
+    
+    FILE *outputFilePtrEM = fopen("outputEM.csv", "a");
+    FILE *outputFilePtrQS = fopen("outputQS.csv", "a");
 
-    if (outputFilePtr  == NULL)
+    if (outputFilePtrEM  == NULL || outputFilePtrQS == NULL)
     {
         printf("Failed to open output file");
         exit(1);
     }
-    
-    for (size_t j = LOW; j <= HIGH; j += JUMP)
-    {
-        int arrsize = j;
-        int elerange = j*100;
 
-        int accuracy = 0;
-        ll expComp = 0;
-        ll maxComp = 0;
-        //ll minComp = 5*ARRSIZE;
-        ll minComp = 0;
+//    for (size_t j = LOW; j <= HIGH; j += JUMP)
+//    {
+        ll arrsize = atoi(argv[1]);
+        ll elerange = arrsize*1000;
+
+        int accuracyEM = 0;
+        int accuracyQS = 0;
+
+        // Comparison Counters for ExactMedian Algorithm
+            ll expCompEM = 0;
+            ll maxCompEM = 0;
+            ll minCompEM = __INT_MAX__;
+
+        // Comparison Counters for QuickSelect Algorithm
+            ll expCompQS = 0;
+            ll maxCompQS = 0;
+            ll minCompQS = __INT_MAX__;
+
         ll len;
         int trail = TRAILS;
         for(size_t i=1; i<=trail; i++)
@@ -472,10 +524,12 @@ int main(){
             // Keep the range of element sufficiently large from len
             // Code breaks for weird reason when it is less
             ll *arr1 = randPermGenRep(len, elerange);
-            //int arr1[] = {10,9,8,7,6,5,4,3,2,1,0};
-
             
-            ll numComp = 0;
+            // Comparison counter for ExactMedian
+                ll numCompEM = 0;
+
+            // Comparison counter for QuickSelct
+                ll numCompQS = 0;
             
             ll *arr2 = (ll *)malloc(len*sizeof(ll));
             ll *arr3 = (ll *)malloc(len*sizeof(ll));
@@ -487,34 +541,39 @@ int main(){
                 arr3[i] = arr1[i];
             }
             
-            ll median = exactMedian(arr2, len, &numComp, &maxComp, &minComp);
+            ll medianEM = exactMedian(arr1, len, &numCompEM, &maxCompEM, &minCompEM);
+            ll medianQS = quickSelect(arr2, len, &numCompQS, &maxCompQS, &minCompQS);
 
             sort_ints(arr3, len);    
 
             ll middleIndex = len/2;
 
-            //printf("%lld is supposed to be %lld    Comparision: %lld\n", median, arr3[middleIndex], numComp);
+            //printf("%lld is supposed to be %lld    Comparision: %lld\n", median, arr3[middleIndex], numCompEM);
 
-            if(median == arr3[middleIndex])
+            if(medianEM == arr3[middleIndex])
             {
-                accuracy++;   
+                accuracyEM++;   
+            }
+            if(medianQS == arr3[middleIndex])
+            {
+                accuracyQS++;   
             }
 
-            expComp += numComp;
+            expCompEM += numCompEM;
+            expCompQS += numCompQS;
             
-            //free(arr1);
+            free(arr1);
             free(arr2);
             free(arr3);
         
             //waitFor(1.5);
             
             for(size_t i = 0; i < 10000000; i++);
-            
-
         }
 
-        fprintf(outputFilePtr, "%lu,%f,%f,%f,%d\n", j, ((float)expComp/trail)/len, ((float)minComp)/len, ((float)maxComp)/len, accuracy);
-    }
+        fprintf(outputFilePtrEM, "%lld,%Lf,f,%f,%d\n", arrsize, ((float)expCompEM/trail)/len, ((float)minCompEM)/len, ((float)maxCompEM)/len, accuracyEM);
+        fprintf(outputFilePtrQS, "%lld,%f,%f,%f,%d\n", arrsize, ((float)expCompQS/trail)/len, ((float)minCompQS)/len, ((float)maxCompQS)/len, accuracyQS);
+//    }
 
     return 0;
 }
